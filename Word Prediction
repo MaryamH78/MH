@@ -1,0 +1,49 @@
+import numpy as np
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Embedding
+
+# Sample text data
+text = "Medical imaging is a vital component of modern healthcare, enabling healthcare providers to visualize the internal structures of the human body non-invasively. By using various imaging modalities, healthcare professionals can diagnose a wide range of medical conditions, guide treatment decisions, and monitor disease progression. The field of medical imaging has evolved significantly over the years, with advancements in technology leading to improved image quality, faster imaging times, and enhanced diagnostic accuracy.The primary goal of medical imaging is to obtain detailed images of the body's organs, tissues, and systems to aid in the diagnosis and treatment of diseases. These images provide valuable information about the size, shape, location, and function of internal structures, allowing healthcare providers to identify abnormalities, assess the extent of disease, and plan appropriate interventions."
+
+# Tokenize the text
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts([text])
+
+# Generate sequences
+sequences = tokenizer.texts_to_sequences([text])[0]
+vocab_size = len(tokenizer.word_index) + 1
+seq_length = 3
+X = []
+y = []
+for i in range(seq_length, len(sequences)):
+    X.append(sequences[i-seq_length:i])
+    y.append(sequences[i])
+
+X = np.array(X)
+y = np.array(y)
+
+# Build LSTM model
+model = Sequential()
+model.add(Embedding(vocab_size, 10, input_length=seq_length))
+model.add(LSTM(100))
+model.add(Dense(vocab_size, activation='softmax'))
+model.compile(loss='sparse_categorical_crossentropy', optimizer='adam')
+
+# Train the model
+model.fit(X, y, epochs=100, verbose=0)
+
+# Generate next word predictions
+# Generate next word predictions
+def generate_next_word(input_text):
+    input_seq = tokenizer.texts_to_sequences([input_text])[0]
+    if len(input_seq) < seq_length:
+        input_seq = [0] * (seq_length - len(input_seq)) + input_seq
+    input_seq = np.array(input_seq).reshape(1, seq_length)
+    predicted_word_prob = model.predict(input_seq)[0]
+    predicted_word_index = np.argmax(predicted_word_prob)
+    predicted_word = tokenizer.index_word[predicted_word_index]
+    return predicted_word# Example usage
+input_text = "The field of "
+predicted_word = generate_next_word(input_text)
+print(predicted_word)
